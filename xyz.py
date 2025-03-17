@@ -3,6 +3,7 @@ import os
 import base64
 from pathlib import Path
 import tempfile
+import streamlit.components.v1 as components
 
 def main():
     st.set_page_config(page_title="PDF Bill Viewer", layout="wide")
@@ -71,24 +72,43 @@ def main():
 def display_pdf(pdf_path):
     """Display the PDF file in the Streamlit app."""
     try:
-        # Opening the file and encoding to base64
+        # Read PDF file
         with open(pdf_path, "rb") as f:
-            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+            pdf_bytes = f.read()
         
-        # Embedding PDF in HTML
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="700" height="800" type="application/pdf"></iframe>'
+        # Display PDF using st.download_button with a label that encourages viewing
+        st.download_button(
+            label="📄 View PDF",
+            data=pdf_bytes,
+            file_name=pdf_path.name,
+            mime="application/pdf",
+            key="view_pdf"
+        )
         
-        # Displaying the PDF
-        st.markdown(pdf_display, unsafe_allow_html=True)
+        # Alternative display method using st.components.v1
+        st.write("### PDF Preview")
+        st.write("If the PDF doesn't display properly, use the View PDF button above.")
         
-        # Also provide a download button
-        with open(pdf_path, "rb") as file:
-            btn = st.download_button(
-                label="Download PDF",
-                data=file,
-                file_name=pdf_path.name,
-                mime="application/pdf"
-            )
+        # Using a different HTML approach that might work better with Chrome security
+        base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        pdf_display = f"""
+            <embed
+                src="data:application/pdf;base64,{base64_pdf}"
+                width="700"
+                height="800"
+                type="application/pdf"
+            >
+        """
+        components.html(pdf_display, height=800)  # Fixed: using components.html instead of st.components.v1.html
+        
+        # Also provide a regular download button
+        st.download_button(
+            label="💾 Download PDF",
+            data=pdf_bytes,
+            file_name=pdf_path.name,
+            mime="application/pdf",
+            key="download_pdf"
+        )
     except Exception as e:
         st.error(f"An error occurred while displaying the PDF: {e}")
 
