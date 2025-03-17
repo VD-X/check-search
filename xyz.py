@@ -4,6 +4,9 @@ import base64
 from pathlib import Path
 import tempfile
 import streamlit.components.v1 as components
+import PyPDF2
+from PIL import Image
+import io
 
 def main():
     st.set_page_config(page_title="PDF Bill Viewer", layout="wide")
@@ -69,6 +72,11 @@ def main():
         # Display PDF file
         display_pdf(pdf_path)
 
+# Add these imports at the top of your file
+import PyPDF2
+from PIL import Image
+import io
+
 def display_pdf(pdf_path):
     """Display the PDF file in the Streamlit app."""
     try:
@@ -78,38 +86,48 @@ def display_pdf(pdf_path):
         
         # Display PDF using st.download_button with a label that encourages viewing
         st.download_button(
-            label="📄 View PDF",
+            label="📄 View Original PDF",
             data=pdf_bytes,
             file_name=pdf_path.name,
             mime="application/pdf",
             key="view_pdf"
         )
         
-        # Alternative display method using object tag
-        st.write("### PDF Preview")
-        st.write("If the PDF doesn't display properly, use the View PDF button above.")
+        # Create tabs for different viewing options
+        tab1, tab2 = st.tabs(["PDF Text", "Download"])
         
-        # Using object tag which has better compatibility
-        base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-        pdf_display = f"""
-            <object
-                data="data:application/pdf;base64,{base64_pdf}"
-                type="application/pdf"
-                width="100%"
-                height="800">
-                <p>Your browser does not support embedded PDFs. Please use the download button above.</p>
-            </object>
-        """
-        components.html(pdf_display, height=800, scrolling=True)
+        with tab1:
+            # Extract and display text from PDF
+            st.write("### PDF Content")
+            
+            try:
+                # Use PyPDF2 to extract text
+                pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
+                
+                # Display each page with a separator
+                for i, page in enumerate(pdf_reader.pages):
+                    text = page.extract_text()
+                    if text.strip():  # Only show if there's actual text
+                        st.subheader(f"Page {i+1}")
+                        st.write(text)
+                    else:
+                        st.subheader(f"Page {i+1}")
+                        st.info("This page contains no extractable text (might be an image or scanned document).")
+            except Exception as e:
+                st.error(f"Could not extract text from PDF: {e}")
+                st.info("This PDF might be scanned or contain only images.")
         
-        # Also provide a regular download button
-        st.download_button(
-            label="💾 Download PDF",
-            data=pdf_bytes,
-            file_name=pdf_path.name,
-            mime="application/pdf",
-            key="download_pdf"
-        )
+        with tab2:
+            # Provide download button
+            st.write("### Download PDF")
+            st.download_button(
+                label="💾 Download PDF",
+                data=pdf_bytes,
+                file_name=pdf_path.name,
+                mime="application/pdf",
+                key="download_pdf"
+            )
+            
     except Exception as e:
         st.error(f"An error occurred while displaying the PDF: {e}")
 
