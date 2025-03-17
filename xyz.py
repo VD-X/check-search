@@ -85,21 +85,22 @@ def display_pdf(pdf_path):
             key="view_pdf"
         )
         
-        # Alternative display method using st.components.v1
+        # Alternative display method using object tag
         st.write("### PDF Preview")
         st.write("If the PDF doesn't display properly, use the View PDF button above.")
         
-        # Using a different HTML approach that might work better with Chrome security
+        # Using object tag which has better compatibility
         base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
         pdf_display = f"""
-            <embed
-                src="data:application/pdf;base64,{base64_pdf}"
-                width="700"
-                height="800"
+            <object
+                data="data:application/pdf;base64,{base64_pdf}"
                 type="application/pdf"
-            >
+                width="100%"
+                height="800">
+                <p>Your browser does not support embedded PDFs. Please use the download button above.</p>
+            </object>
         """
-        components.html(pdf_display, height=800)  # Fixed: using components.html instead of st.components.v1.html
+        components.html(pdf_display, height=800, scrolling=True)
         
         # Also provide a regular download button
         st.download_button(
