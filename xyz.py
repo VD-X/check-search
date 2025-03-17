@@ -93,33 +93,60 @@ def display_pdf(pdf_path):
             key="view_pdf"
         )
         
-        # Create tabs for different viewing options
-        tab1, tab2 = st.tabs(["PDF Text", "Download"])
-        
-        with tab1:
-            # Extract and display text from PDF
-            st.write("### PDF Content")
+        if PYPDF2_AVAILABLE:
+            # Create tabs for different viewing options
+            tab1, tab2 = st.tabs(["PDF Text", "Download"])
             
-            try:
-                # Use PyPDF2 to extract text
-                pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
+            with tab1:
+                # Extract and display text from PDF
+                st.write("### PDF Content")
                 
-                # Display each page with a separator
-                for i, page in enumerate(pdf_reader.pages):
-                    text = page.extract_text()
-                    if text.strip():  # Only show if there's actual text
-                        st.subheader(f"Page {i+1}")
-                        st.write(text)
-                    else:
-                        st.subheader(f"Page {i+1}")
-                        st.info("This page contains no extractable text (might be an image or scanned document).")
-            except Exception as e:
-                st.error(f"Could not extract text from PDF: {e}")
-                st.info("This PDF might be scanned or contain only images.")
-        
-        with tab2:
+                try:
+                    # Use PyPDF2 to extract text
+                    pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
+                    
+                    # Display each page with a separator
+                    for i, page in enumerate(pdf_reader.pages):
+                        text = page.extract_text()
+                        if text.strip():  # Only show if there's actual text
+                            st.subheader(f"Page {i+1}")
+                            st.write(text)
+                        else:
+                            st.subheader(f"Page {i+1}")
+                            st.info("This page contains no extractable text (might be an image or scanned document).")
+                except Exception as e:
+                    st.error(f"Could not extract text from PDF: {e}")
+                    st.info("This PDF might be scanned or contain only images.")
+            
+            with tab2:
+                # Provide download button
+                st.write("### Download PDF")
+                st.download_button(
+                    label="💾 Download PDF",
+                    data=pdf_bytes,
+                    file_name=pdf_path.name,
+                    mime="application/pdf",
+                    key="download_pdf"
+                )
+        else:
+            # Fallback when PyPDF2 is not available
+            # Try to display PDF using HTML
+            st.write("### PDF Preview")
+            base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+            pdf_display = f"""
+                <iframe
+                    src="data:application/pdf;base64,{base64_pdf}"
+                    width="100%"
+                    height="800"
+                    type="application/pdf">
+                </iframe>
+            """
+            try:
+                components.html(pdf_display, height=800, scrolling=True)
+            except Exception:
+                st.error("Could not display PDF preview. Please use the download button.")
+            
             # Provide download button
-            st.write("### Download PDF")
             st.download_button(
                 label="💾 Download PDF",
                 data=pdf_bytes,
